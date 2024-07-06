@@ -1,36 +1,37 @@
 "use client";
 import React, { useState } from "react";
-
+import page from "../page";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-function LoginPage() {
+function SignupPage() {
   const [user, setUser] = useState({
     email: "",
+    username: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  async function handleLogin() {
+  async function handleSignup() {
     try {
       console.log(user);
       setIsLoading(true);
-      const res = await fetch("http://localhost:3000/api/users/login", {
+      const res = await fetch("http://localhost:3000/api/users/signup", {
         body: JSON.stringify(user),
         method: "POST",
       });
-      const data = await res.json();
-      console.log(data);
-
-      toast.success(data.message);
-      router.push("/");
+      const { message } = await res.json();
+      toast.success(message);
+      router.push("/login");
     } catch (error: any) {
-      console.log(error);
       toast.error(error.message);
     }
   }
-  const isDisabled = user.email === "" || user.password === "" ? true : false;
+  const isDisabled =
+    user.email === "" || user.password === "" || user.username === ""
+      ? true
+      : false;
   return (
     <div
       className="
@@ -38,7 +39,7 @@ function LoginPage() {
       bg-black text-white
     "
     >
-      <h1>Login Page</h1>
+      <h1>Sign Up Page</h1>
       <input
         type="email"
         placeholder="Email"
@@ -46,7 +47,13 @@ function LoginPage() {
         className="mt-4 bg-gray-300 p-2 w-80 rounded-md"
         onChange={(e) => setUser({ ...user, email: e.target.value })}
       />
-
+      <input
+        type="text"
+        placeholder="Username"
+        value={user.username}
+        className="mt-4 bg-gray-300 p-2 w-80 rounded-md"
+        onChange={(e) => setUser({ ...user, username: e.target.value })}
+      />
       <input
         type="password"
         placeholder="Password"
@@ -55,7 +62,7 @@ function LoginPage() {
         onChange={(e) => setUser({ ...user, password: e.target.value })}
       />
       <button
-        onClick={handleLogin}
+        onClick={handleSignup}
         disabled={isDisabled}
         className="
         mt-4 bg-gray-300 p-2 w-80 rounded-md
@@ -65,16 +72,16 @@ function LoginPage() {
         {isLoading ? "Loading..." : "Sign Up"}
       </button>
       <Link
-        href="/signup"
+        href="/login"
         className="
  text-blue-500 mt-4 
        
       "
       >
-        Dont have an account? Sign Up
+        Already have an account? Login
       </Link>
     </div>
   );
 }
 
-export default LoginPage;
+export default SignupPage;
