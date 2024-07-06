@@ -1,5 +1,6 @@
+import User from "@/models/user.model";
 import nodemailer from "nodemailer";
-
+import bcrypt from "bcryptjs";
 interface sendmailType {
   email: string;
   emailType: string;
@@ -10,15 +11,40 @@ export default async function sendEmail({
   emailType,
   userId,
 }: sendmailType) {
-  // TODO - userId
   try {
+    const salt = await bcrypt.genSalt(10);
+    const hashedToken = await bcrypt.hash(userId.toString(), salt);
+    const expiry = Date.now() + 3600000;
+
+    if (emailType == "VERIFY") {
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          verifyToken: hashedToken,
+          verifyTokenExpiry: expiry,
+        },
+      });
+    } else if (emailType === "RESET") {
+      await User.findByIdAndUpdate(userId, {
+        $set: {
+          forgotPasswordToken: hashedToken,
+          forgotPasswordExpiry: expiry,
+        },
+      });
+    }
+
+    const verifyHtml = `<p>Click the link to verify your account 
+     ${process.env.DOMAIN}/verify-email?token=${hashedToken}
+    </p>`;
+    const resetHtml = `<p>Click the link to reset your account's password 
+     ${process.env.DOMAIN}/reset-password?token=${hashedToken}
+    </p>`;
+    // !Node mailer
     const transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false, // Use `true` for port 465, `false` for all other ports
+      host: "sandbox.smtp.mailtrap.io",
+      port: 2525,
       auth: {
-        user: "maddison53@ethereal.email",
-        pass: "jn7jnAPss4f63QBp6D",
+        user: "b95bf79ba92caa",
+        pass: "a2d6e0c715361b",
       },
     });
 
@@ -27,7 +53,7 @@ export default async function sendEmail({
       to: email,
       subject:
         emailType === "VERIFY" ? "Verify your email" : "Reset your password",
-      html: "<b>Hello world?</b>",
+      html: emailType === "VERIFY" ? verifyHtml : resetHtml,
     };
     const mailResponse = await transporter.sendMail(mailOptions);
     console.log("Message sent: %s", mailResponse.messageId);
